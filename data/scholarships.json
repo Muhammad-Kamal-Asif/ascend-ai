@@ -1,0 +1,482 @@
+[
+    {
+        "name": "Fulbright Degree Program",
+        "country": "USA",
+        "fields": "All fields except clinical medicine",
+        "gpa_min": "3.0",
+        "deadline_month": "February",
+        "bond": "2-year home residency requirement",
+        "url": "https://pk.usembassy.gov/education-culture/fulbright-degree-program/",
+        "note": "Fully funded Master's and PhD. Requires GRE/TOEFL."
+    },
+    {
+        "name": "Chevening Scholarship",
+        "country": "UK",
+        "fields": "All fields",
+        "gpa_min": "2.8",
+        "deadline_month": "November",
+        "bond": "2-year home residency requirement",
+        "url": "https://www.chevening.org/scholarship/",
+        "note": "Fully funded 1-year Master's. Focus on leadership. Requires 2 years work experience."
+    },
+    {
+        "name": "DAAD EPOS Scholarship",
+        "country": "Germany",
+        "fields": "Development-related fields, Engineering, Economics",
+        "gpa_min": "2.8",
+        "deadline_month": "August-October (Varies)",
+        "bond": "None",
+        "url": "https://www.daad.de/",
+        "note": "Fully funded Master's and PhD. Requires 2 years of professional experience."
+    },
+    {
+        "name": "Erasmus Mundus Joint Masters",
+        "country": "Europe (Multiple)",
+        "fields": "Interdisciplinary fields",
+        "gpa_min": "3.0",
+        "deadline_month": "October-January",
+        "bond": "None",
+        "url": "https://erasmus-plus.ec.europa.eu/",
+        "note": "Study in at least two different European countries. Highly prestigious."
+    },
+    {
+        "name": "SUSI (Study of the U.S. Institutes) for Student Leaders",
+        "country": "USA",
+        "fields": "Public Policy, Civic Engagement, Entrepreneurship",
+        "gpa_min": "None specified",
+        "deadline_month": "November",
+        "bond": "Must return to home country",
+        "url": "https://exchanges.state.gov/non-us/program/study-us-institutes-scholars",
+        "note": "Short-term academic exchange for undergrads. High focus on leadership."
+    },
+    {
+        "name": "Stipendium Hungaricum",
+        "country": "Hungary",
+        "fields": "STEM, Business, Humanities",
+        "gpa_min": "2.5",
+        "deadline_month": "January",
+        "bond": "None",
+        "url": "https://stipendiumhungaricum.hu/",
+        "note": "Fully funded Bachelor's, Master's, and PhD. Very popular bilateral program."
+    },
+    {
+        "name": "Global Korea Scholarship (GKS)",
+        "country": "South Korea",
+        "fields": "All fields",
+        "gpa_min": "3.2",
+        "deadline_month": "March (Embassy Track)",
+        "bond": "None",
+        "url": "https://www.studyinkorea.go.kr/",
+        "note": "Fully funded. Includes 1 year of mandatory Korean language training."
+    },
+    {
+        "name": "Turkiye Burslari",
+        "country": "Turkey",
+        "fields": "All fields",
+        "gpa_min": "3.0",
+        "deadline_month": "February",
+        "bond": "None",
+        "url": "https://turkiyeburslari.gov.tr/",
+        "note": "Fully funded at all levels. Includes 1 year of Turkish language training."
+    },
+    {
+        "name": "KAUST Global Fellowship",
+        "country": "Saudi Arabia",
+        "fields": "STEM, AI, Computer Science",
+        "gpa_min": "3.5",
+        "deadline_month": "January",
+        "bond": "None",
+        "url": "https://bese.kaust.edu.sa/",
+        "note": "World-class research facilities. Extremely high stipend."
+    },
+    {
+        "name": "Islamic Development Bank (IsDB) Scholarship",
+        "country": "Global",
+        "fields": "Sustainability, Tech, Health, Engineering",
+        "gpa_min": "3.0",
+        "deadline_month": "February",
+        "bond": "Must work in home country or IsDB member state",
+        "url": "https://www.isdb.org/scholarships",
+        "note": "Focused on community development and UN SDGs."
+    },
+    {
+        "name": "France Excellence Eiffel Scholarship",
+        "country": "France",
+        "fields": "Engineering, Management, Law, Political Science",
+        "gpa_min": "3.5",
+        "deadline_month": "January",
+        "bond": "None",
+        "url": "https://www.campusfrance.org/en/eiffel-scholarship-program-of-excellence",
+        "note": "Aimed at future foreign decision-makers. Covers Master's and PhD."
+    },
+    {
+        "name": "Swedish Institute Scholarships for Global Professionals (SISGP)",
+        "country": "Sweden",
+        "fields": "Sustainability, Innovation, Management",
+        "gpa_min": "3.0",
+        "deadline_month": "February",
+        "bond": "None",
+        "url": "https://si.se/en/apply/scholarships/",
+        "note": "Requires 3000 hours of documented work/volunteer experience."
+    },
+    {
+        "name": "Flanders Master Mind Scholarship",
+        "country": "Belgium",
+        "fields": "All fields",
+        "gpa_min": "3.5",
+        "deadline_month": "April",
+        "bond": "None",
+        "url": "https://www.studyinflanders.be/scholarships/master-mind-scholarships",
+        "note": "Merit-based grant for international students."
+    },
+    {
+        "name": "World Bank Graduate Scholarship Program",
+        "country": "Global",
+        "fields": "Development, Policy, Health",
+        "gpa_min": "3.0",
+        "deadline_month": "May",
+        "bond": "Must return to home country",
+        "url": "https://www.worldbank.org/en/programs/scholarships",
+        "note": "Requires 3+ years of development-related work experience."
+    },
+    {
+        "name": "Community Engagement Exchange (CEE) Program",
+        "country": "USA",
+        "fields": "Civil Society, Peacebuilding, Environment",
+        "gpa_min": "None specified",
+        "deadline_month": "July",
+        "bond": "2-year home residency requirement",
+        "url": "https://www.irex.org/project/community-engagement-exchange",
+        "note": "Fully funded 3-month US-based fellowship."
+    },
+    {
+        "name": "Harvard Belfer Center Fellowship",
+        "country": "USA",
+        "fields": "International Affairs, Science, Security",
+        "gpa_min": "3.5",
+        "deadline_month": "December",
+        "bond": "None",
+        "url": "https://www.belfercenter.org/fellowships",
+        "note": "Prestigious research fellowship for pre-doctoral and post-doctoral scholars."
+    },
+    {
+        "name": "ISTernship Summer Program",
+        "country": "Austria",
+        "fields": "Biology, Computer Science, Math, Physics",
+        "gpa_min": "None specified",
+        "deadline_month": "February",
+        "bond": "None",
+        "url": "https://phd.ista.ac.at/isternship/",
+        "note": "Fully funded 2-3 month summer internship at IST Austria."
+    },
+    {
+        "name": "St. Gallen Symposium Leaders of Tomorrow (LOT)",
+        "country": "Switzerland",
+        "fields": "All fields",
+        "gpa_min": "None specified",
+        "deadline_month": "February",
+        "bond": "None",
+        "url": "https://symposium.org/leaders-of-tomorrow/",
+        "note": "Essay competition granting a fully funded trip to the St. Gallen Symposium."
+    },
+    {
+        "name": "Fulbright FLTA (Foreign Language Teaching Assistant)",
+        "country": "USA",
+        "fields": "English, Education, Languages",
+        "gpa_min": "None specified",
+        "deadline_month": "Varies by country",
+        "bond": "2-year home residency requirement",
+        "url": "https://flta.fulbrightonline.org/",
+        "note": "9-month non-degree program to teach native languages in the US."
+    },
+    {
+        "name": "E-JUST TICAD Scholarship",
+        "country": "Egypt",
+        "fields": "Engineering, Basic Sciences",
+        "gpa_min": "3.0",
+        "deadline_month": "February",
+        "bond": "None",
+        "url": "https://ejust.edu.eg/",
+        "note": "Fully funded Master's and PhD for African students."
+    },
+    {
+        "name": "Finland Government Scholarship",
+        "country": "Finland",
+        "fields": "All fields",
+        "gpa_min": "Varies",
+        "deadline_month": "January",
+        "bond": "None",
+        "url": "https://www.studyinfinland.fi/scholarships",
+        "note": "Covers 100% tuition plus a 5000 EUR relocation grant."
+    },
+    {
+        "name": "University of Bristol Think Big Scholarship",
+        "country": "UK",
+        "fields": "All fields",
+        "gpa_min": "Varies",
+        "deadline_month": "February / April",
+        "bond": "None",
+        "url": "https://www.bristol.ac.uk/students/support/finances/scholarships/think-big-undergraduate/",
+        "note": "Fee waivers ranging from 6,500 to 26,000 GBP."
+    },
+    {
+        "name": "Romanian Government Scholarship",
+        "country": "Romania",
+        "fields": "All fields except Medicine/Pharmacy/Dental",
+        "gpa_min": "None specified",
+        "deadline_month": "March",
+        "bond": "None",
+        "url": "https://scholarships.studyinromania.gov.ro/",
+        "note": "Fully funded at all levels. Taught in Romanian (language year included)."
+    },
+    {
+        "name": "Hiroshima University Doctoral Fellowship",
+        "country": "Japan",
+        "fields": "STEM, Humanities",
+        "gpa_min": "Varies",
+        "deadline_month": "Varies",
+        "bond": "None",
+        "url": "https://www.hiroshima-u.ac.jp/en/fellowship",
+        "note": "Covers tuition and provides a living allowance for PhD candidates."
+    },
+    {
+        "name": "Canadian University Dubai (CUD) Scholarship",
+        "country": "UAE",
+        "fields": "All fields",
+        "gpa_min": "3.8",
+        "deadline_month": "July / December",
+        "bond": "None",
+        "url": "https://www.cud.ac.ae/scholarships",
+        "note": "Up to 100% tuition waiver for academic excellence."
+    },
+    {
+        "name": "Taiwan ICDF Scholarship",
+        "country": "Taiwan",
+        "fields": "Agriculture, Tech, Public Health",
+        "gpa_min": "None specified",
+        "deadline_month": "March",
+        "bond": "None",
+        "url": "https://www.icdf.org.tw/",
+        "note": "Fully funded Bachelor's, Master's, and PhD."
+    },
+    {
+        "name": "Jiangsu Presidential Scholarship",
+        "country": "China",
+        "fields": "All fields",
+        "gpa_min": "None specified",
+        "deadline_month": "June",
+        "bond": "None",
+        "url": "https://www.studyinjiangsu.org/",
+        "note": "Fully funded for international students studying in Jiangsu province."
+    },
+    {
+        "name": "HBKU Scholarship",
+        "country": "Qatar",
+        "fields": "Islamic Studies, Humanities, Science, Law",
+        "gpa_min": "3.0",
+        "deadline_month": "February",
+        "bond": "None",
+        "url": "https://www.hbku.edu.qa/en/admissions",
+        "note": "Fully funded Master's and PhD at Hamad Bin Khalifa University."
+    },
+    {
+        "name": "University of Geneva Excellence Fellowship",
+        "country": "Switzerland",
+        "fields": "Science",
+        "gpa_min": "Top 10% of class",
+        "deadline_month": "March",
+        "bond": "None",
+        "url": "https://www.unige.ch/sciences/en/enseignements/formations/masters/excellencemasterfellowships/",
+        "note": "10,000 to 15,000 CHF/year for outstanding Master's students in Science."
+    },
+    {
+        "name": "OIST Graduate Program",
+        "country": "Japan",
+        "fields": "Science, Engineering, Interdisciplinary",
+        "gpa_min": "3.0",
+        "deadline_month": "November",
+        "bond": "None",
+        "url": "https://admissions.oist.jp/",
+        "note": "Fully funded 5-year PhD program. State-of-the-art labs."
+    },
+    {
+        "name": "Yokohama National University MEXT",
+        "country": "Japan",
+        "fields": "Engineering, Urban Innovation",
+        "gpa_min": "3.0",
+        "deadline_month": "December",
+        "bond": "None",
+        "url": "https://www.ynu.ac.jp/english/admissions/",
+        "note": "University-recommended MEXT track. Fully funded."
+    },
+    {
+        "name": "Queen Elizabeth Commonwealth Scholarship (QECS)",
+        "country": "Commonwealth Countries",
+        "fields": "All fields",
+        "gpa_min": "Varies",
+        "deadline_month": "January",
+        "bond": "None",
+        "url": "https://www.acu.ac.uk/funding-opportunities/for-students/scholarships/queen-elizabeth-commonwealth-scholarships/",
+        "note": "Fully funded Master's degrees in low/middle-income Commonwealth countries."
+    },
+    {
+        "name": "Qatar University Scholarship",
+        "country": "Qatar",
+        "fields": "All fields",
+        "gpa_min": "None specified",
+        "deadline_month": "Varies",
+        "bond": "None",
+        "url": "https://www.qu.edu.qa/students/services/scholarships",
+        "note": "Fully funded undergraduate and graduate programs."
+    },
+    {
+        "name": "Open Doors Russian Scholarship",
+        "country": "Russia",
+        "fields": "STEM, Business, Humanities",
+        "gpa_min": "None specified",
+        "deadline_month": "December",
+        "bond": "None",
+        "url": "https://od.globaluni.ru/en/",
+        "note": "Olympiad competition granting free tuition to Russian Master's and PhD programs."
+    },
+    {
+        "name": "Universiti Malaya Bright Scholarship",
+        "country": "Malaysia",
+        "fields": "All fields",
+        "gpa_min": "3.5",
+        "deadline_month": "Varies",
+        "bond": "None",
+        "url": "https://study.um.edu.my/",
+        "note": "Full tuition waiver and living allowance for top PhD candidates."
+    },
+    {
+        "name": "Generation Google Scholarship",
+        "country": "Global",
+        "fields": "Computer Science, Tech",
+        "gpa_min": "None specified",
+        "deadline_month": "April",
+        "bond": "None",
+        "url": "https://buildyourfuture.withgoogle.com/scholarships/generation-google-scholarship",
+        "note": "Financial grant for underrepresented groups in tech."
+    },
+    {
+        "name": "UBD Graduate Scholarship",
+        "country": "Brunei",
+        "fields": "All fields",
+        "gpa_min": "Varies",
+        "deadline_month": "February",
+        "bond": "None",
+        "url": "https://ubd.edu.bn/",
+        "note": "Fully funded Master's and PhD at Universiti Brunei Darussalam."
+    },
+    {
+        "name": "Study in Saudi Arabia (Government Portal)",
+        "country": "Saudi Arabia",
+        "fields": "All fields except Medicine",
+        "gpa_min": "Varies",
+        "deadline_month": "Varies",
+        "bond": "None",
+        "url": "https://studyinsaudi.moe.gov.sa/",
+        "note": "Centralized portal for fully funded scholarships across all Saudi public universities."
+    },
+    {
+        "name": "Gates Cambridge Scholarship",
+        "country": "UK",
+        "fields": "All fields",
+        "gpa_min": "Outstanding",
+        "deadline_month": "December / January",
+        "bond": "None",
+        "url": "https://www.gatescambridge.org/",
+        "note": "Fully funded postgraduate degree at the University of Cambridge. Focus on leadership."
+    },
+    {
+        "name": "Knight-Hennessy Scholars",
+        "country": "USA",
+        "fields": "All fields",
+        "gpa_min": "Outstanding",
+        "deadline_month": "October",
+        "bond": "None",
+        "url": "https://knight-hennessy.stanford.edu/",
+        "note": "Fully funded graduate programs at Stanford University."
+    },
+    {
+        "name": "Vanier Canada Graduate Scholarships",
+        "country": "Canada",
+        "fields": "Health, Natural Sciences, Engineering, Humanities",
+        "gpa_min": "Outstanding",
+        "deadline_month": "November",
+        "bond": "None",
+        "url": "https://vanier.gc.ca/",
+        "note": "50,000 CAD per year for 3 years. Highly prestigious PhD scholarship."
+    },
+    {
+        "name": "Australia Awards Scholarships (AAS)",
+        "country": "Australia",
+        "fields": "Development, Education, Health",
+        "gpa_min": "Varies",
+        "deadline_month": "April",
+        "bond": "2-year home residency requirement",
+        "url": "https://www.dfat.gov.au/people-to-people/australia-awards/australia-awards-scholarships",
+        "note": "Fully funded by the Australian Government for developing countries."
+    },
+    {
+        "name": "Swiss Government Excellence Scholarships",
+        "country": "Switzerland",
+        "fields": "All fields",
+        "gpa_min": "Varies",
+        "deadline_month": "September - December (Varies by country)",
+        "bond": "None",
+        "url": "https://www.sbfi.admin.ch/sbfi/en/home/education/scholarships-and-grants/swiss-government-excellence-scholarships.html",
+        "note": "For PhD, Postdoc, and research stays. Highly competitive."
+    },
+    {
+        "name": "Singapore International Graduate Award (SINGA)",
+        "country": "Singapore",
+        "fields": "Biomedical Sciences, Physical Sciences, Engineering",
+        "gpa_min": "Good academic record",
+        "deadline_month": "June / December",
+        "bond": "None",
+        "url": "https://www.a-star.edu.sg/Scholarships/for-graduate-studies/singapore-international-graduate-award-singa",
+        "note": "Fully funded PhD at top Singaporean universities (NUS, NTU, SUTD)."
+    },
+    {
+        "name": "McCall MacBain Scholarships",
+        "country": "Canada",
+        "fields": "All fields",
+        "gpa_min": "Varies",
+        "deadline_month": "August / September",
+        "bond": "None",
+        "url": "https://mccallmacbainscholars.org/",
+        "note": "Fully funded Master's and professional degrees at McGill University."
+    },
+    {
+        "name": "Asian Development Bank - Japan Scholarship Program (ADB-JSP)",
+        "country": "Asia/Pacific (Multiple)",
+        "fields": "Economics, Management, S&T",
+        "gpa_min": "Varies",
+        "deadline_month": "Varies by host institution",
+        "bond": "Must return to home country",
+        "url": "https://www.adb.org/work-with-us/careers/japan-scholarship-program",
+        "note": "Fully funded Master's for citizens of ADB borrowing members."
+    },
+    {
+        "name": "Manaaki New Zealand Scholarships",
+        "country": "New Zealand",
+        "fields": "Climate, Agriculture, Renewable Energy",
+        "gpa_min": "Varies",
+        "deadline_month": "February",
+        "bond": "2-year home residency requirement",
+        "url": "https://www.nzscholarships.govt.nz/",
+        "note": "Fully funded for developing country students."
+    },
+    {
+        "name": "CSC Chinese Government Scholarship",
+        "country": "China",
+        "fields": "All fields",
+        "gpa_min": "2.5",
+        "deadline_month": "March",
+        "bond": "None",
+        "url": "http://www.campuschina.org/",
+        "note": "Fully funded Bachelor's, Master's, and PhD. Bilateral program often routed through home country ministries."
+    }
+]

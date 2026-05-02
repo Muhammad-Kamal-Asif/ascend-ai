@@ -1,0 +1,14 @@
+# Credentials
+.env
+
+# Python
+__pycache__/
+venv/
+*.pyc
+
+# Local Database
+chroma_db/
+
+# OS files
+.DS_Store
+Thumbs.db
