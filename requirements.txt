@@ -26,3 +26,4 @@ python-dotenv>=1.0.1
 # --- Vector DB (Required for RAG/ingest.py) ---
 chromadb==0.4.24
 sentence-transformers==2.6.1
+numpy<2.0.0
