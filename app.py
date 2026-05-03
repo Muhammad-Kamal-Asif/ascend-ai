@@ -16,21 +16,6 @@ from langchain_community.tools import DuckDuckGoSearchRun
 # Load environment variables
 load_dotenv()
 
-# --- QUAD-KEY LOAD BALANCER ---
-# Store original keys safely so we can rotate them dynamically
-GROQ_KEYS = [
-    os.environ.get("GROQ_API_KEY"), 
-    os.environ.get("GROQ_API_KEY_2"),
-    os.environ.get("GROQ_API_KEY_3"),
-    os.environ.get("GROQ_API_KEY_4")
-]
-VALID_KEYS = [k for k in GROQ_KEYS if k]
-
-def rotate_api_key():
-    """Dynamically swaps the active API key to prevent Token-Per-Minute limits."""
-    if VALID_KEYS:
-        os.environ["GROQ_API_KEY"] = random.choice(VALID_KEYS)
-
 # Import our backend modules AFTER loading environment variables
 from agents.profile_agent import extract_profile
 from agents.module_a import run_module_a
@@ -131,7 +116,7 @@ st.title("🎓 Ascend AI: Your Global & Local Career Navigator")
 if st.button("✨ Load Demo Profile (Muhammad Kamal)"):
     st.session_state.raw_notes = (
         "Muhammad Kamal, BBA student at University of Sargodha (Malik Firoz Khan Noon Business School). "
-        "Co-Founder & Lead Strategist at TriSyn Media. Founder of Skill Squad academic consultancy. "
+        "Co-Founder & Lead Strategist at TriSyn Media."
         "Technical Lead at Lincoln Corner Sargodha and Social Media Manager for PAAP. "
         "Expertise in Python, SQL, and Power BI. Interests: Generative AI and Scholarship hunting for "
         "Master's abroad. Targets: Fulbright and Commonwealth scholarships."
@@ -168,7 +153,6 @@ if st.button("🚀 Generate My Path", type="primary", use_container_width=True):
     if not user_text.strip():
         st.warning("Please provide background details first.")
     else:
-        rotate_api_key()
 
         with st.status("Agent 1: Structuring Profile...", expanded=True) as status:
             st.session_state.profile_data = extract_profile(user_text)
@@ -179,9 +163,6 @@ if st.button("🚀 Generate My Path", type="primary", use_container_width=True):
             status_a.update(label="SOP & Scholarships Ready!", state="complete", expanded=False)
 
         time.sleep(12)
-        
-        # --- NEW: Swap to Key 2 to bypass Groq rate limit ---
-        rotate_api_key()
 
         with st.status("Module B: Mapping Careers...", expanded=True) as status_b:
             st.session_state.module_b_data = run_module_b(st.session_state.profile_data)
@@ -189,12 +170,8 @@ if st.button("🚀 Generate My Path", type="primary", use_container_width=True):
 
         time.sleep(12)
 
-        # --- NEW: Swap back to Key 1 (or keep Key 2) for safety ---
-        rotate_api_key()
-
         with st.status("Module C: Local Tech Ecosystem...", expanded=True) as status_c:
             st.session_state.module_c_data = run_module_c(st.session_state.profile_data)
-            status_c.update(label="Local Ecosystem Ready!", state="complete", expanded=False)
             status_c.update(label="Local Ecosystem Ready!", state="complete", expanded=False)
 
         # --- NEW: SAVE SNAPSHOT TO HISTORY BEFORE RERUN ---

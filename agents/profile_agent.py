@@ -1,12 +1,14 @@
 import json
 from crewai import Agent, Task, Crew, Process
 
+from utils.key_manager import key_manager
+
 def extract_profile(raw_text):
     profile_agent = Agent(
         role="Profile Intelligence Architect",
         goal="Extract unstructured student data and perform a rigorous profile strength assessment.",
         backstory="You are an elite university admissions consultant. You not only extract data but evaluate it critically against top-tier global scholarship standards (like Fulbright, Chevening, DAAD). You are brutally honest about gaps and highly strategic about improvements.",
-        llm="groq/llama-3.3-70b-versatile",
+        llm=key_manager.get_llm(model="groq/llama-3.3-70b-versatile"), # <-- Explicitly using the 70b model with Key Manager
         verbose=True
     )
 

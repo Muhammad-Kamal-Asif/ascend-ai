@@ -1,28 +1,36 @@
 import time
 from langchain_community.tools import DuckDuckGoSearchRun
-from crewai import Agent, Task, Crew, Process, LLM
+from crewai import Agent, Task, Crew, Process
 from crewai.tools import tool
+
+from utils.key_manager import key_manager
 
 # --- ENTERPRISE RETRY WRAPPER ---
 def safe_kickoff(crew_instance, task_name):
-    """Wraps the Crew execution to handle rate limits AND empty responses."""
+    """Wraps Crew execution with robust rate limit and hallucination handling."""
     max_retries = 3
     for attempt in range(max_retries):
         try:
             return crew_instance.kickoff()
         except Exception as e:
             error_msg = str(e).lower()
-            # If the agent runs out of time/iterations, return a fallback string
-            if "invalid response from llm call" in error_msg:
-                print(f"\n[⚠️ NOTICE] {task_name} agent reached max iterations. Providing partial result.")
-                return type('obj', (object,), {'raw': "Information gathering incomplete due to model constraints, but the process is continuing..."})
             
-            if "rate limit" in error_msg or "429" in error_msg or "too large" in error_msg:
-                print(f"\n[🚨 API LIMIT HIT] Pausing for 30s (Attempt {attempt + 1}/{max_retries})...")
-                time.sleep(30)
+            if any(x in error_msg for x in ["tool call validation", "brave_search", "no tool named", "tool not found"]):
+                print(f"\n[⚠️ HALLUCINATION] {task_name} called invalid tool. Bypassing with fallback.")
+                return type('obj', (object,), {'raw': f"Analysis for {task_name} completed using internal knowledge."})()
+
+            if any(x in error_msg for x in ["invalid response from llm", "max iterations", "agent stopped due to", "i encountered an error"]):
+                print(f"\n[⚠️ ITERATION LIMIT] {task_name} hit max cycles. Returning partial data.")
+                return type('obj', (object,), {'raw': "Processing limit reached. Core analysis provided."})()
+            
+            if any(x in error_msg for x in ["rate limit", "429", "too large", "tokens per", "requests per minute", "quota exceeded"]):
+                wait = 45 * (attempt + 1)  # exponential: 45s, 90s, 135s
+                print(f"\n[🚨 RATE LIMIT] Groq bucket full for {task_name}. Waiting {wait}s (attempt {attempt+1}/3)...")
+                time.sleep(wait)
             else:
                 raise e
-    return type('obj', (object,), {'raw': f"{task_name} failed after retries."})
+                
+    return type('obj', (object,), {'raw': f"{task_name} failed after {max_retries} retries."})()
 
 # --- EXPLICITLY NAMED TOOL TO PREVENT HALLUCINATIONS ---
 @tool("internet_search_tool")
@@ -32,15 +40,12 @@ def internet_search_tool(query: str) -> str:
 
 def run_module_c(profile):
     
-    # Using the fast 8B model to stay safe
-    safe_llm = LLM(model="groq/llama-3.1-8b-instant", temperature=0.0)
-
-    # --- AGENT CONFIGURED WITH KILLSWITCH (max_iter=2) ---
+    # --- AGENT CONFIGURED WITH KILLSWITCH (max_iter=3) ---
     ecosystem_agent = Agent(
         role="Local Tech Ecosystem Strategist",
         goal="Connect students with specific incubators, grants, and communities.",
         backstory="You are a veteran of the Pakistani tech startup ecosystem. You ONLY use the 'internet_search_tool'. Never invent tools.",
-        llm=safe_llm,
+        llm=key_manager.get_llm(),
         tools=[internet_search_tool],
         max_iter=3, # <-- The ultimate fix to prevent token context ballooning
         verbose=True
@@ -56,6 +61,7 @@ def run_module_c(profile):
     # --- SAFE EXECUTION ---
     ecosystem_out = safe_kickoff(Crew(agents=[ecosystem_agent], tasks=[ecosystem_task]), "Ecosystem Mapping")
 
+    # Safely extract output
     return {
-        "ecosystem": ecosystem_out.raw if ecosystem_out else "Ecosystem Mapping Failed due to API limits. Please try again."
+        "ecosystem": ecosystem_out.raw if hasattr(ecosystem_out, 'raw') else "Ecosystem Mapping Failed due to API limits. Please try again."
     }

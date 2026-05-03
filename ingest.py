@@ -9,27 +9,24 @@ DB_DIR = "./chroma_db"
 DATA_FILE = os.path.join(DATA_DIR, "scholarships.json")
 
 def ensure_data_exists():
-    """Creates the fallback scholarships.json if it doesn't exist to ensure the script is 100% runnable."""
+    """Validates that the real scholarship database exists and has adequate data."""
     os.makedirs(DATA_DIR, exist_ok=True)
     
-    if os.path.exists(DATA_FILE):
-        return
-
-    print(f"Creating foundational dataset at {DATA_FILE}...")
-    scholarships = [
-        {"name": "Fulbright Degree Program", "country": "USA", "fields": "All fields except clinical medicine", "gpa_min": "3.0", "deadline_month": "February", "bond": "2-year home residency requirement", "url": "https://pk.usembassy.gov/education-culture/fulbright-degree-program/", "note": "Fully funded Master's and PhD for Pakistani citizens. Requires GRE."},
-        {"name": "Chevening Scholarship", "country": "UK", "fields": "All fields", "gpa_min": "2.8", "deadline_month": "November", "bond": "2-year home residency requirement", "url": "https://www.chevening.org/scholarship/pakistan/", "note": "Fully funded 1-year Master's. Focus on leadership and networking. Requires 2 years work experience."},
-        {"name": "DAAD EPOS Scholarship", "country": "Germany", "fields": "Development-related fields, Engineering, Economics", "gpa_min": "2.8", "deadline_month": "Varies by program (usually Aug-Oct)", "bond": "None", "url": "https://www.daad.de/", "note": "Fully funded Master's and PhD. Requires 2 years of professional experience."},
-        {"name": "HEC Overseas Scholarship", "country": "Global", "fields": "Priority areas defined by HEC (STEM, AI, Agriculture)", "gpa_min": "3.0", "deadline_month": "Spring/Fall", "bond": "5-year service bond to Pakistan", "url": "https://www.hec.gov.pk/", "note": "Fully funded PhD programs for Pakistani nationals. Requires HAT test."},
-        {"name": "Commonwealth Scholarship", "country": "UK", "fields": "Science, Tech, Health, Rural Development", "gpa_min": "3.0", "deadline_month": "October", "bond": "Must return to home country", "url": "https://cscuk.fcdo.gov.uk/", "note": "Fully funded Master's and PhD for Commonwealth citizens."},
-        {"name": "CSC Chinese Government Scholarship", "country": "China", "fields": "All fields", "gpa_min": "2.5", "deadline_month": "March", "bond": "None", "url": "http://www.campuschina.org/", "note": "Fully funded Bachelor's, Master's, and PhD. Bilateral program often routed through HEC."},
-        {"name": "Turkiye Burslari", "country": "Turkey", "fields": "All fields", "gpa_min": "3.0", "deadline_month": "February", "bond": "None", "url": "https://turkiyeburslari.gov.tr/", "note": "Fully funded at all levels. Includes 1 year of Turkish language training."},
-        {"name": "KAIST International Graduate Scholarship", "country": "South Korea", "fields": "STEM, Computer Science, Engineering", "gpa_min": "3.2", "deadline_month": "March/September", "bond": "None", "url": "https://admission.kaist.ac.kr/", "note": "Highly competitive, fully funded MS and PhD. Strong focus on research output."},
-        {"name": "Erasmus Mundus Joint Masters", "country": "Europe (Multiple)", "fields": "Interdisciplinary fields", "gpa_min": "3.0", "deadline_month": "October-January", "bond": "None", "url": "https://erasmus-plus.ec.europa.eu/", "note": "Study in at least two different European countries. Highly prestigious."},
-        {"name": "OIST Graduate Program", "country": "Japan", "fields": "Science, Engineering, Interdisciplinary", "gpa_min": "3.0", "deadline_month": "November", "bond": "None", "url": "https://admissions.oist.jp/", "note": "Fully funded 5-year PhD program. No Japanese language requirement. State-of-the-art labs."}
-    ]
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(scholarships, f, indent=4)
+    if not os.path.exists(DATA_FILE):
+        raise FileNotFoundError(
+            f"scholarships.json not found at {DATA_FILE}.\n"
+            f"Please ensure the data/ folder is present before running ingest.py.\n"
+            f"The full 45+ scholarship database must be placed there."
+        )
+        
+    # Count entries and warn if suspiciously low
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        
+    if len(data) < 20:
+        print(f"⚠️  WARNING: Only {len(data)} scholarships found. Expected 40+. Check your scholarships.json.")
+    else:
+        print(f"✅ Found {len(data)} scholarships. Proceeding with ingestion.")
 
 def run_ingestion():
     # 1. Check if DB already exists to avoid redundant rebuilding

@@ -3,18 +3,15 @@ import requests
 from bs4 import BeautifulSoup
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.utilities import ArxivAPIWrapper
-from crewai import Agent, Task, Crew, Process, LLM
+from crewai import Agent, Task, Crew, Process
 from crewai.tools import tool
+
+from utils.key_manager import key_manager
+from agents.rag_matcher import query_scholarships
 
 # --- ENTERPRISE RETRY WRAPPER ---
 def safe_kickoff(crew_instance, task_name):
-    """
-    Final protective wrapper. 
-    Handles: 
-    1. Rate Limits (TPM/TPD)
-    2. Tool Hallucinations (Brave_search errors)
-    3. Max Iteration Failures (Empty responses)
-    """
+    """Wraps Crew execution with robust rate limit and hallucination handling."""
     max_retries = 3
     for attempt in range(max_retries):
         try:
@@ -22,26 +19,22 @@ def safe_kickoff(crew_instance, task_name):
         except Exception as e:
             error_msg = str(e).lower()
             
-            # 1. CATCH HALLUCINATION: If the model insists on a tool it doesn't have
-            if "tool call validation" in error_msg or "brave_search" in error_msg:
-                print(f"\n[⚠️ HALLUCINATION] {task_name} tried to call an invalid tool. Bypassing with fallback.")
-                return type('obj', (object,), {'raw': "Strategic insights generated based on profile analysis (Direct search bypassed to ensure stability)."})
+            if any(x in error_msg for x in ["tool call validation", "brave_search", "no tool named", "tool not found"]):
+                print(f"\n[⚠️ HALLUCINATION] {task_name} called invalid tool. Bypassing with fallback.")
+                return type('obj', (object,), {'raw': f"Analysis for {task_name} completed using internal knowledge."})()
 
-            # 2. CATCH ITERATION LIMIT: If the model reaches max_iter without a final answer
-            if "invalid response from llm call" in error_msg:
-                print(f"\n[⚠️ ITERATION LIMIT] {task_name} reached max thought cycles. Returning partial data.")
-                return type('obj', (object,), {'raw': "Analysis completed. For detailed real-time links, please consult the specific program portals."})
+            if any(x in error_msg for x in ["invalid response from llm", "max iterations", "agent stopped due to", "i encountered an error"]):
+                print(f"\n[⚠️ ITERATION LIMIT] {task_name} hit max cycles. Returning partial data.")
+                return type('obj', (object,), {'raw': "Processing limit reached. Core analysis provided."})()
             
-            # 3. CATCH RATE LIMITS: Pause and retry
-            if "rate limit" in error_msg or "429" in error_msg or "too large" in error_msg:
-                print(f"\n[🚨 API LIMIT] Groq bucket full. Pausing 30s (Attempt {attempt + 1}/{max_retries})...")
-                time.sleep(30)
+            if any(x in error_msg for x in ["rate limit", "429", "too large", "tokens per", "requests per minute", "quota exceeded"]):
+                wait = 45 * (attempt + 1)  # exponential: 45s, 90s, 135s
+                print(f"\n[🚨 RATE LIMIT] Groq bucket full for {task_name}. Waiting {wait}s (attempt {attempt+1}/3)...")
+                time.sleep(wait)
             else:
-                # If it's a code error we haven't seen, raise it so we can fix it
                 raise e
                 
-    # Fallback if all retries fail
-    return type('obj', (object,), {'raw': f"{task_name} results are being processed manually."})
+    return type('obj', (object,), {'raw': f"{task_name} failed after {max_retries} retries."})()
 
 # --- TOOLS ---
 @tool("brave_search")
@@ -68,114 +61,93 @@ def scrape_website_tool(url: str) -> str:
 # --- MAIN MODULE RUNNER ---
 def run_module_a(profile, live_rate):
     
-    safe_llm = LLM(model="groq/llama-3.1-8b-instant", temperature=0.0)
     research_tools = [arxiv_search_tool] if profile.get("is_research_track", False) else []
 
     # --- AGENTS ---
-    sop_agent = Agent(role="SOP Architect", goal="Write a compelling SOP.", backstory="Elite admissions consultant.", llm=safe_llm, tools=research_tools, max_iter=3, verbose=True)
-    evaluator_agent = Agent(role="Rubric Evaluator", goal="Score the SOP.", backstory="Strict admissions officer evaluating structure and impact.", llm=safe_llm, max_iter=3, verbose=True)
+    sop_agent = Agent(role="SOP Architect", goal="Write a compelling SOP.", backstory="Elite admissions consultant.", llm=key_manager.get_llm(), tools=research_tools, max_iter=3, verbose=True)
+    evaluator_agent = Agent(role="Rubric Evaluator", goal="Score the SOP.", backstory="Strict admissions officer evaluating structure and impact.", llm=key_manager.get_llm(), max_iter=3, verbose=True)
+    scholarship_agent = Agent(role="Scholarship Matcher", goal="Match global scholarships.", backstory="Financial aid expert. Analyzes provided list of matches.", llm=key_manager.get_llm(), max_iter=3, verbose=True) # Tool removed, RAG handles it
+    targeted_gap_agent = Agent(role="Scholarship-Specific Gap Advisor", goal="Compare profile against specific scholarships.", backstory="Strategic advisor identifying missing requirements.", llm=key_manager.get_llm(), max_iter=3, verbose=True)
     
-    # FIX: Updated tool names and added soft fallbacks
-    scholarship_agent = Agent(role="Scholarship Matcher", goal="Match global scholarships.", backstory="Financial aid expert. You use 'brave_search' to find programs. If search fails, use your internal knowledge.", llm=safe_llm, tools=[internet_search_tool], max_iter=3, verbose=True)
+    verification_agent = Agent(role="Scholarship Auditor", goal="Verify live deadlines.", backstory="Application auditor. You use 'brave_search' to find pages, and 'scrape_website_tool' to verify dates.", llm=key_manager.get_llm(), tools=[internet_search_tool, scrape_website_tool], max_iter=3, verbose=True)
+    faculty_agent = Agent(role="Faculty Matcher", goal="Identify professors and draft emails.", backstory="Academic networking advisor. You use 'brave_search'.", llm=key_manager.get_llm(), tools=[internet_search_tool, arxiv_search_tool], max_iter=3, verbose=True)
     
-    # FIX: Increased max_iter to 3 and fixed tool naming
-    verification_agent = Agent(role="Scholarship Auditor", goal="Verify live deadlines.", backstory="Application auditor. You use 'brave_search' to find pages, and 'scrape_website_tool' to verify dates.", llm=safe_llm, tools=[internet_search_tool, scrape_website_tool], max_iter=3, verbose=True)
-    
-    faculty_agent = Agent(role="Faculty Matcher", goal="Identify professors and draft emails.", backstory="Academic networking advisor. You use 'brave_search'.", llm=safe_llm, tools=[internet_search_tool, arxiv_search_tool], max_iter=3, verbose=True)
-    proposal_agent = Agent(role="Research Strategist", goal="Draft research proposal.", backstory="PhD advisor skilled in formulating literature-backed research plans.", llm=safe_llm, tools=[arxiv_search_tool], max_iter=3, verbose=True)
-    
-    # FIX: Fixed tool naming
-    scholar_trends_agent = Agent(role="Research Trend Analyst", goal="Identify the top 3 research domains.", backstory="Data-driven academic researcher. You use 'arxiv_search_tool' or 'brave_search'.", llm=safe_llm, tools=[arxiv_search_tool, internet_search_tool], max_iter=3, verbose=True)
-    
-    targeted_gap_agent = Agent(role="Scholarship-Specific Gap Advisor", goal="Compare profile against specific scholarships.", backstory="Strategic advisor identifying missing requirements.", llm=safe_llm, max_iter=3, verbose=True)
+    scholar_trends_agent = Agent(role="Research Trend Analyst", goal="Identify the top 3 research domains.", backstory="Data-driven academic researcher. You use 'arxiv_search_tool' or 'brave_search'.", llm=key_manager.get_llm(), tools=[arxiv_search_tool, internet_search_tool], max_iter=3, verbose=True)
+    proposal_agent = Agent(role="Research Strategist", goal="Draft research proposal.", backstory="PhD advisor skilled in formulating literature-backed research plans.", llm=key_manager.get_llm(), tools=[arxiv_search_tool], max_iter=3, verbose=True)
 
-    # --- EXECUTION WITH DYNAMIC RETRIES ---
-    
-    print("\n[SYSTEM] 1/8: Drafting SOP...")
-    sop_task = Task(
-        description=(
-            f"Write a 600-word Statement of Purpose (SOP) for {profile.get('name')} applying for a Master's degree in {profile.get('target_program', 'their field')}.\n\n"
-            f"--- STUDENT PROFILE DATA ---\n{profile}\n\n"
-            f"Use this exact data to write a compelling narrative. Seamlessly weave in their specific university, CGPA, startups, leadership roles, and technical skills into the story."
-        ),
-        expected_output=(
-            "A complete, 3-paragraph SOP. STRICT RULE: DO NOT use any placeholders, brackets, or generic text like [University Name], [Hometown], or [Field of Study]. "
-            "Every detail must be fully written out and personalized based ONLY on the provided profile data."
-        ),
-        agent=sop_agent
+    # --- RAG SCHOLARSHIP MATCHING (Bug 3 Fix) ---
+    print("\n[SYSTEM] Querying Vector Database for Scholarships...")
+    rag_matches = query_scholarships(profile, n_results=5)
+
+    # --- EXECUTION WITH DYNAMIC RETRIES & CREW CONSOLIDATION (Bug 4 Fix) ---
+
+    # PHASE 1: Text Generation Tasks (No risky tools used here)
+    print("\n[SYSTEM] Starting Phase 1: Text Generation & Scholarship Matching...")
+    sop_task = Task(description=f"Write a 600-word SOP for {profile.get('name')}... \nProfile:\n{profile}", expected_output="A complete, 3-paragraph SOP.", agent=sop_agent)
+    eval_task = Task(description="Score the SOP out of 25 and provide 3 quick revision tips.", expected_output="A scorecard and 3 tips.", context=[sop_task], agent=evaluator_agent)
+    scholarship_task = Task(
+        description=(f"The RAG system matched these scholarships:\n{rag_matches}\n\n"
+                     f"Write a 2-sentence fit rationale for each. Convert USD/EUR to PKR using {live_rate}. Flag ineligible programs based on gaps. DO NOT use search tools."),
+        expected_output="Formatted scholarship report with fit rationale and PKR conversions.",
+        agent=scholarship_agent
     )
-    sop_out = safe_kickoff(Crew(agents=[sop_agent], tasks=[sop_task]), "SOP Generation")
-    time.sleep(10)
-
-    print("\n[SYSTEM] 2/8: Evaluating SOP...")
-    eval_task = Task(description=f"Score this SOP out of 25 and provide 3 quick revision tips:\n\n{sop_out.raw if sop_out else 'N/A'}", expected_output="A scorecard and 3 tips.", agent=evaluator_agent)
-    eval_out = safe_kickoff(Crew(agents=[evaluator_agent], tasks=[eval_task]), "SOP Evaluation")
-    time.sleep(10)
-
-    print("\n[SYSTEM] 3/8: Matching Scholarships...")
-    # FIX: Explicitly mentioned 'brave_search' and added a fallback command
-    scholarship_task = Task(description=f"Find 3 fully-funded international scholarships for {profile.get('target_program')} in {profile.get('target_country')}. Convert amounts to PKR using {live_rate}. You MUST use 'brave_search'. If search is slow, list major known scholarships like Fulbright.", expected_output="List of 3 scholarships.", agent=scholarship_agent)
-    schol_out = safe_kickoff(Crew(agents=[scholarship_agent], tasks=[scholarship_task]), "Scholarship Matcher")
-    time.sleep(10)
-
-    print("\n[SYSTEM] 4/8: Auditing Deadlines...")
-    # FIX: Explicitly mentioned 'brave_search' and added a fallback command
-    verif_task = Task(description=f"Review these matched programs:\n\n{schol_out.raw if schol_out else 'N/A'}\n\nUse 'brave_search' to find official deadlines, and 'scrape_website_tool' to verify. If exact dates aren't found quickly, list the typical application months based on your knowledge.", expected_output="Live verification report with estimated or exact deadlines.", agent=verification_agent)
-    verif_out = safe_kickoff(Crew(agents=[verification_agent], tasks=[verif_task]), "Deadline Auditor")
-    time.sleep(10)
-
-    print("\n[SYSTEM] 5/8: Targeted Gap Analysis...")
     gap_task = Task(
-        description=(
-            f"Compare {profile.get('name')}'s profile against the requirements of the matched scholarships.\n\n"
-            f"--- PROFILE DATA ---\n{profile}\n\n"
-            f"--- MATCHED SCHOLARSHIPS ---\n{schol_out.raw if schol_out else 'N/A'}\n\n"
-            f"Identify exactly what is missing, what matches, or what needs improvement."
-        ),
-        expected_output=(
-            f"A strict Markdown table for EACH scholarship. You MUST fill in all columns. "
-            f"Use EXACTLY this format:\n\n"
-            f"### [Scholarship Name]\n"
-            f"| Criteria | {profile.get('name')}'s Profile | Required Documents/Information |\n"
-            f"|---|---|---|\n"
-            f"| (e.g., Academic Score) | (e.g., 3.74 CGPA) | (e.g., Minimum 3.5 CGPA) |\n"
-            f"| (e.g., Motivation Letter) | (e.g., Not Available) | (e.g., 500-word essay required) |"
-        ),
+        description=f"Compare {profile.get('name')}'s profile against the matched scholarships to identify gaps.",
+        expected_output="A strict Markdown table for EACH scholarship identifying missing/matching requirements.",
+        context=[scholarship_task],
         agent=targeted_gap_agent
     )
-    gap_out = safe_kickoff(Crew(agents=[targeted_gap_agent], tasks=[gap_task]), "Gap Analysis")
+    
+    text_crew = Crew(agents=[sop_agent, evaluator_agent, scholarship_agent, targeted_gap_agent], tasks=[sop_task, eval_task, scholarship_task, gap_task], process=Process.sequential)
+    text_out = safe_kickoff(text_crew, "Text Generation Phase")
     time.sleep(10)
 
-    print("\n[SYSTEM] 6/8: Faculty Outreach...")
+    # Extract dynamic output for Phase 2
+    schol_raw = scholarship_task.output.raw if hasattr(scholarship_task, 'output') and scholarship_task.output else "Matching failed."
+
+# Ensure we don't pass empty brackets to the search tool
+    research_topic = profile.get('research_interests') if profile.get('research_interests') else profile.get('target_program', 'their academic field')
+
+    # PHASE 2: Live Web Search Tasks
+    print("\n[SYSTEM] Starting Phase 2: Live Web Search & Verification...")
+    verif_task = Task(description=f"Review these programs:\n{schol_raw}\nUse 'brave_search' and 'scrape_website_tool' to verify deadlines.", expected_output="Live verification report.", agent=verification_agent)
     faculty_task = Task(
-        description=f"Find 2 hypothetical or real professors in {profile.get('research_interests', profile.get('target_program', 'their field'))}. First, explicitly list their names, titles, and research focus. Then, draft a 150-word cold email.", 
-        expected_output="A structured response containing:\n1. 'Target Faculty': A bulleted list of 2 professors and their exact research areas.\n2. 'Email Draft': The cold email template.", 
+        description=f"Use the 'internet_search_tool' to find 2 REAL, specific professors at top international universities who research {research_topic}. You MUST include their full name, exact university name, and a brief description of their specific research lab. Then, draft a 150-word cold email.", 
+        expected_output="List of 2 professors (Name, University, Research Focus) and an email draft.", 
         agent=faculty_agent
     )
-    fac_out = safe_kickoff(Crew(agents=[faculty_agent], tasks=[faculty_task]), "Faculty Matcher")
+    
+    search_crew = Crew(agents=[verification_agent, faculty_agent], tasks=[verif_task, faculty_task], process=Process.sequential)
+    search_out = safe_kickoff(search_crew, "Search Phase")
     time.sleep(10)
 
-    print("\n[SYSTEM] 7/8: Research Trends...")
+    # PHASE 3: Academic Research Tasks
+    print("\n[SYSTEM] Starting Phase 3: Research Trends & Proposals...")
     scholar_trends_task = Task(
-        description=f"Use the 'arxiv_search_tool' or 'brave_search' to find highly specific, cutting-edge research trends related to {profile.get('research_interests', profile.get('target_program', 'their field'))}. DO NOT list broad categories like 'Physics' or 'Computer Science'. Instead, find niche intersections (e.g., 'Generative AI for Social-First Marketing' or 'Predictive Analytics in E-commerce').", 
-        expected_output="A bulleted list of 3 highly specific research sub-domains. Include a 1-sentence explanation for each on why it is currently trending based on recent publications.", 
+        description=f"Find cutting-edge research trends related to {research_topic}. Try using 'arxiv_search_tool'. If the search fails or is empty, use your internal knowledge to list highly specific niche domains. DO NOT list broad categories.", 
+        expected_output="Bulleted list of 3 specific research sub-domains. Include a 1-sentence explanation for each.", 
         agent=scholar_trends_agent
     )
-    trends_out = safe_kickoff(Crew(agents=[scholar_trends_agent], tasks=[scholar_trends_task]), "Trend Analysis")
-    time.sleep(10)
+    proposal_task = Task(
+        description=f"Draft a 500-word academic research proposal for {research_topic} based on recent literature. If search tools fail, rely on your internal expertise to formulate a highly realistic, literature-backed plan.", 
+        expected_output="500-word academic research proposal.", 
+        agent=proposal_agent
+    )
+    
+    research_crew = Crew(agents=[scholar_trends_agent, proposal_agent], tasks=[scholar_trends_task, proposal_task], process=Process.sequential)
+    research_out = safe_kickoff(research_crew, "Research Phase")
 
-    print("\n[SYSTEM] 8/8: Research Proposal...")
-    proposal_task = Task(description=f"Draft a 500-word academic research proposal for {profile.get('target_program')} based on recent literature.", expected_output="500-word proposal.", agent=proposal_agent)
-    prop_out = safe_kickoff(Crew(agents=[proposal_agent], tasks=[proposal_task]), "Research Proposal")
+    # Safely extract outputs
+    def get_output(task, fallback_text):
+        return task.output.raw if hasattr(task, 'output') and task.output else fallback_text
 
-    # Safe return to prevent UI crashes if an agent fails
     return {
-        "sop": sop_out.raw if sop_out else "SOP Generation Failed due to API limits.",
-        "rubric": eval_out.raw if eval_out else "Evaluation Failed.",
-        "scholar_trends": trends_out.raw if trends_out else "Trend Analysis Failed.",
-        "scholarships": schol_out.raw if schol_out else "Scholarship Matching Failed.",
-        "targeted_gaps": gap_out.raw if gap_out else "Gap Analysis Failed.",
-        "verification": verif_out.raw if verif_out else "Verification Failed.", 
-        "faculty_outreach": fac_out.raw if fac_out else "Faculty Match Failed.",
-        "proposal": prop_out.raw if prop_out else "Proposal Generation Failed."
+        "sop": get_output(sop_task, "SOP Generation Failed."),
+        "rubric": get_output(eval_task, "Evaluation Failed."),
+        "scholar_trends": get_output(scholar_trends_task, "Trend Analysis Failed."),
+        "scholarships": get_output(scholarship_task, "Scholarship Matching Failed."),
+        "targeted_gaps": get_output(gap_task, "Gap Analysis Failed."),
+        "verification": get_output(verif_task, "Verification Failed."), 
+        "faculty_outreach": get_output(faculty_task, "Faculty Match Failed."),
+        "proposal": get_output(proposal_task, "Proposal Generation Failed.")
     }

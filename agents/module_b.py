@@ -1,8 +1,8 @@
-import profile
-
 from langchain_community.tools import YouTubeSearchTool
-from crewai import Agent, Task, Crew, Process, LLM
+from crewai import Agent, Task, Crew, Process
 from crewai.tools import tool
+
+from utils.key_manager import key_manager
 
 # --- NATIVE CREWAI TOOL WRAPPER ---
 @tool
@@ -12,21 +12,19 @@ def youtube_search_tool(query: str) -> str:
 
 def run_module_b(profile):
     
-    safe_llm = LLM(model="groq/llama-3.1-8b-instant", temperature=0.0)
-
     career_agent = Agent(
         role="Career Path Mapper",
         goal="Map student skills to high-paying digital economy roles.",
         backstory="You are an expert career counselor focused on the Pakistani freelance and tech job market.",
-        llm=safe_llm,
+        llm=key_manager.get_llm(),
         verbose=True
     )
 
     roadmap_agent = Agent(
         role="Learning Roadmap Builder",
         goal="Create a 12-week skill syllabus with verified YouTube resources.",
-        backstory="You are a curriculum designer who uses free internet resources to upskill students. You ALWAYS formulate your tool calls with perfect JSON syntax.",
-        llm=safe_llm,
+        backstory="You are a curriculum designer who uses free internet resources to upskill students. You must extract and provide the actual YouTube URLs in your final response, NEVER raw tool call code or <function> tags.",
+        llm=key_manager.get_llm(),
         tools=[youtube_search_tool],
         verbose=True
     )
@@ -35,7 +33,7 @@ def run_module_b(profile):
         role="Freelance Market Entry Strategist",
         goal="Convert skills into ready-to-sell freelance services on Upwork and Fiverr.",
         backstory="You are a top-rated plus freelancer in Pakistan. You know exactly how to write Upwork bios that get clients and Fiverr gigs that rank.",
-        llm=safe_llm,
+        llm=key_manager.get_llm(),
         verbose=True
     )
 
@@ -44,7 +42,7 @@ def run_module_b(profile):
         role="Academic vs Industry Strategist",
         goal="Provide a brutally honest tradeoff analysis between pursuing a PhD versus entering the industry.",
         backstory="You are a pragmatist. You know that a PhD is not for everyone and has huge opportunity costs. You evaluate the student's career goals and tell them the hard truth about whether academia or industry suits them better, providing 2 specific university recommendations if they choose the academic route.",
-        llm=safe_llm,
+        llm=key_manager.get_llm(),
         verbose=True
     )
 
@@ -57,8 +55,8 @@ def run_module_b(profile):
     skill_level = "intermediate" if profile.get('work_experience') else "beginner"
 
     roadmap_task = Task(
-        description=f"Create a 12-week YouTube learning roadmap for {profile.get('name')} to master {profile.get('target_program', 'their field')}. You MUST format this as a vertical list.",
-        expected_output="A strict Markdown list. Each week MUST be on a new line and start with a bullet point (e.g., '- **Week 1:** [Topic] - [URL]'). Do NOT output a single paragraph.",
+        description=f"Create a 12-week YouTube learning roadmap for {profile.get('name')} to master {profile.get('target_program', 'their field')}. Use the youtube_search_tool to find real videos. You MUST format this as a vertical list containing actual 'https://www.youtube.com/...' URLs.",
+        expected_output="A strict Markdown list. Each week MUST start with a bullet point (e.g., '- **Week 1:** [Topic] - https://www.youtube.com/watch?v=...'). Do NOT output <function> tags.",
         agent=roadmap_agent
     )
 
@@ -82,9 +80,13 @@ def run_module_b(profile):
     )
     crew.kickoff()
 
+    # Safely extract outputs in case of an execution hiccup
+    def get_output(task, fallback_text):
+        return task.output.raw if hasattr(task, 'output') and task.output else fallback_text
+
     return {
-        "careers": career_task.output.raw,
-        "roadmap": roadmap_task.output.raw,
-        "freelance": freelance_task.output.raw,
-        "phd_tradeoff": phd_advisor_task.output.raw # NEW OUTPUT
+        "careers": get_output(career_task, "Career mapping failed."),
+        "roadmap": get_output(roadmap_task, "Roadmap generation failed."),
+        "freelance": get_output(freelance_task, "Freelance strategy failed."),
+        "phd_tradeoff": get_output(phd_advisor_task, "Tradeoff analysis failed.") 
     }
