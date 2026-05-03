@@ -5,6 +5,7 @@ import pdfplumber
 import time
 import os
 import random
+from datetime import datetime  # <-- NEW: Added for history timestamps
 from io import BytesIO
 from docx import Document
 from dotenv import load_dotenv
@@ -59,37 +60,16 @@ def create_word_doc(text_content):
     doc.save(bio)
     return bio.getvalue()
 
-def translate_to_urdu(text_content):
-    from langchain_groq import ChatGroq
-    # Langchain translator using the currently active key and MODERN 8B model
-    llm_translator = ChatGroq(
-        temperature=0.2,
-        model_name="llama-3.1-8b-instant",
-        api_key=os.environ.get("GROQ_API_KEY")
-    )
-    prompt = f"Translate the following professional text into formal academic Urdu script:\n\n{text_content}"
-    try:
-        return llm_translator.invoke(prompt).content
-    except:
-        return "Translation limit reached. Please try again shortly."
-
 # --- UPGRADED: The Jina AI Reader Bypass ---
 def scrape_linkedin_public(url):
     try:
-        # We wrap the LinkedIn URL in Jina's free LLM-reader proxy
         jina_url = f"https://r.jina.ai/{url}"
-        
-        # Jina renders the page and returns clean markdown
         response = requests.get(jina_url, timeout=40)
         
         if response.status_code == 200:
             content = response.text
-            
-            # LinkedIn sometimes throws an "Authwall" even to proxies. We must catch this.
             if "authwall" in content.lower() or "sign in to view" in content.lower() or "join linkedin" in content.lower():
                 return "LinkedIn Enterprise Firewall blocked the request (Authwall). Please use Option 2 (Upload CV) for accurate results."
-            
-            # Return the first 3000 characters of clean markdown profile data
             return f"LinkedIn Profile Data (via Jina Reader):\n{content[:3000]}"
         else:
             return f"Proxy blocked (Status {response.status_code}). Please use Option 2 (Upload CV)."
@@ -97,16 +77,50 @@ def scrape_linkedin_public(url):
     except Exception as e:
         return f"Scraping Error: {str(e)}"
 
-# Initialize Session State
+# --- INITIALIZE SESSION STATE ---
 if "raw_notes" not in st.session_state:
     st.session_state.raw_notes = ""
+if "generation_complete" not in st.session_state:
+    st.session_state.generation_complete = False
+if "profile_data" not in st.session_state:
+    st.session_state.profile_data = None
+if "module_a_data" not in st.session_state:
+    st.session_state.module_a_data = None
+if "module_b_data" not in st.session_state:
+    st.session_state.module_b_data = None
+if "module_c_data" not in st.session_state:
+    st.session_state.module_c_data = None
 
-# --- UI RENDERING ---
+# --- NEW: INITIALIZE HISTORY STATE ---
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+# --- UI RENDERING: SIDEBAR ---
 st.sidebar.title("⚙️ System Status")
 live_rate = get_live_exchange_rate()
 st.sidebar.success(f"Live USD to PKR: **Rs. {live_rate:.2f}**")
 st.sidebar.info("Architecture: Multi-Agent Load Balanced")
 
+# --- NEW: SIDEBAR HISTORY UI ---
+st.sidebar.divider()
+st.sidebar.subheader("🗂️ Session History")
+
+# Display a message if history is empty, otherwise show buttons
+if not st.session_state.history:
+    st.sidebar.caption("No previous searches yet. Generate a path to save it here!")
+else:
+    # Reverse the list so the newest generation is at the top
+    for idx, record in enumerate(reversed(st.session_state.history)):
+        # When clicked, it restores the saved data back into the main view
+        if st.sidebar.button(f"📄 {record['title']}", key=f"hist_btn_{idx}", use_container_width=True):
+            st.session_state.profile_data = record["profile_data"]
+            st.session_state.module_a_data = record["module_a_data"]
+            st.session_state.module_b_data = record["module_b_data"]
+            st.session_state.module_c_data = record["module_c_data"]
+            st.session_state.generation_complete = True
+            st.rerun()
+
+# --- MAIN UI ---
 st.title("🎓 Ascend AI: Your Global & Local Career Navigator")
 
 if st.button("✨ Load Demo Profile (Muhammad Kamal)"):
@@ -117,13 +131,14 @@ if st.button("✨ Load Demo Profile (Muhammad Kamal)"):
         "Expertise in Python, SQL, and Power BI. Interests: Generative AI and Scholarship hunting for "
         "Master's abroad. Targets: Fulbright and Commonwealth scholarships."
     )
+    st.session_state.generation_complete = False
     st.rerun()
 
-# --- UPDATED UI INPUT SECTION ---
+# --- INPUT SECTION ---
 col1, col2, col3 = st.columns([1.5, 1, 1])
 
 with col1:
-    user_text = st.text_area("Background & Goals:", value=st.session_state.raw_notes, height=200)
+    user_text = st.text_area("Background & Goals:", key="raw_notes", height=200)
 
 with col2:
     st.markdown("**Option 2: Upload CV**")
@@ -140,6 +155,7 @@ with col3:
             with st.spinner("Scraping public data..."):
                 scraped_data = scrape_linkedin_public(li_url)
                 st.session_state.raw_notes = scraped_data
+                st.session_state.generation_complete = False
                 st.rerun()
 
 # --- EXECUTION ENGINE ---
@@ -147,122 +163,133 @@ if st.button("🚀 Generate My Path", type="primary", use_container_width=True):
     if not user_text.strip():
         st.warning("Please provide background details first.")
     else:
-        # Trigger the Load Balancer before running the swarm
         rotate_api_key()
 
-        # 1. RUN THE AGENTS FIRST
         with st.status("Agent 1: Structuring Profile...", expanded=True) as status:
-            profile = extract_profile(user_text)
+            st.session_state.profile_data = extract_profile(user_text)
             status.update(label="Profile Ready", state="complete", expanded=False)
 
-        # Module A
         with st.status("Module A: Drafting SOP & Matching...", expanded=True) as status_a:
-            module_a_results = run_module_a(profile, live_rate)
+            st.session_state.module_a_data = run_module_a(st.session_state.profile_data, live_rate)
             status_a.update(label="SOP & Scholarships Ready!", state="complete", expanded=False)
 
-        time.sleep(12) # Protects against Groq's Requests-Per-Minute limit
+        time.sleep(12) 
 
-        # Module B
         with st.status("Module B: Mapping Careers...", expanded=True) as status_b:
-            module_b_results = run_module_b(profile)
+            st.session_state.module_b_data = run_module_b(st.session_state.profile_data)
             status_b.update(label="Career Roadmap Ready!", state="complete", expanded=False)
 
-        time.sleep(12) # Protects against Groq's Requests-Per-Minute limit
+        time.sleep(12) 
 
-        # Module C
         with st.status("Module C: Local Tech Ecosystem...", expanded=True) as status_c:
-            module_c_results = run_module_c(profile)
+            st.session_state.module_c_data = run_module_c(st.session_state.profile_data)
             status_c.update(label="Local Ecosystem Ready!", state="complete", expanded=False)
 
-        # 2. RENDER THE TABS ONLY AFTER EVERYTHING HAS RUN
-        tab1, tab2, tab3, tab4 = st.tabs(["📝 Profile", "🌍 SOP & Scholarships", "💼 Career Roadmap", "🇵🇰 Local Ecosystem"])
+        # --- NEW: SAVE SNAPSHOT TO HISTORY BEFORE RERUN ---
+        prof_name = st.session_state.profile_data.get('name', 'Student').split()[0] # Get first name
+        timestamp = datetime.now().strftime("%H:%M") # Get current time
         
-        with tab1: 
-            st.subheader(f"🎓 {profile.get('name', 'Student')} - Profile Overview")
-            
-            score = profile.get("profile_strength_score", 0)
-            st.metric(label="Profile Strength Score", value=f"{score} / 100", delta="Competitiveness Matrix" if score > 75 else "Needs Improvement")
-            st.progress(score / 100)
-            
-            st.divider()
-            
-            col_a, col_b = st.columns(2)
-            with col_a:
-                st.error("🚨 Gap Analysis")
-                st.write(profile.get("gap_analysis", "No gaps identified."))
-            with col_b:
-                st.success("📈 6-Month Improvement Roadmap")
-                for step in profile.get("improvement_roadmap", []):
-                    st.write(f"- {step}")
-            
-            st.divider()
-            with st.expander("View Raw Extracted Data"):
-                st.json(profile)
+        st.session_state.history.append({
+            "title": f"{prof_name} ({timestamp})",
+            "profile_data": st.session_state.profile_data,
+            "module_a_data": st.session_state.module_a_data,
+            "module_b_data": st.session_state.module_b_data,
+            "module_c_data": st.session_state.module_c_data
+        })
 
-        with tab2:
-            st.subheader("📝 Statement of Purpose")
-            st.write(module_a_results["sop"])
-            if st.button("🇮🇳 Translate SOP to Urdu"):
-                st.write(translate_to_urdu(module_a_results["sop"]))
-            st.download_button("📄 Download SOP", create_word_doc(module_a_results["sop"]), "SOP.docx")
-            
-            # --- NEW UI: SCHOLAR TRENDS ---
-            st.divider()
-            st.subheader("📊 Research Trends (Last 3 Years)")
-            st.info("The hottest domains in your field based on recent ArXiv publications.")
-            st.write(module_a_results.get("scholar_trends", ""))
-            
-            st.divider()
-            st.subheader("🌍 Matched Scholarships (2026)")
-            st.write(module_a_results["scholarships"])
-            
-            # --- NEW UI: TARGETED GAPS ---
-            st.divider()
-            st.subheader("🎯 Targeted Scholarship Gap Analysis")
-            st.error("What you are specifically missing for the matched programs above.")
-            st.write(module_a_results.get("targeted_gaps", ""))
-            
-            st.divider()
-            st.subheader("🕵️ Live Deadline & Document Audit")
-            st.info("Scraped directly from the official scholarship portals just now.")
-            st.write(module_a_results["verification"])
-            
-            st.divider()
-            st.subheader("👨‍🏫 Faculty Match & Cold Email Draft")
-            st.info("Potential faculty advisors and a personalized cold email template referencing recent research.")
-            st.write(module_a_results["faculty_outreach"])
-            
-            st.divider()
-            st.subheader("🔬 AI-Drafted Research Proposal")
-            st.info("A 500-word, literature-backed research proposal generated from live ArXiv papers.")
-            st.write(module_a_results["proposal"])
-            st.download_button("📄 Download Proposal", create_word_doc(module_a_results["proposal"]), "Research_Proposal.docx")
+        st.session_state.generation_complete = True
+        st.rerun()
 
-        with tab3:
-            st.subheader("💼 Digital Career Mapping")
-            st.write(module_b_results["careers"])
-            
-            st.divider()
-            st.subheader("📺 12-Week YouTube Learning Roadmap")
-            st.write(module_b_results["roadmap"])
-            
-            st.divider()
-            st.subheader("💸 Freelance Market Entry")
-            st.info("Ready-to-use Upwork bio, Fiverr gigs, and a 14-day portfolio project.")
-            st.write(module_b_results["freelance"])
-            
-            # --- NEW UI: ACADEMIA VS INDUSTRY ---
-            st.divider()
-            st.subheader("⚖️ Academia vs Industry (The Hard Truth)")
-            st.info("An honest tradeoff analysis of pursuing a PhD vs entering the workforce.")
-            st.write(module_b_results.get("phd_tradeoff", ""))
+# --- UI RENDERING ---
+if st.session_state.generation_complete:
+    
+    profile = st.session_state.profile_data
+    module_a_results = st.session_state.module_a_data
+    module_b_results = st.session_state.module_b_data
+    module_c_results = st.session_state.module_c_data
 
-        with tab4:
-            st.subheader("🇵🇰 Local Tech Ecosystem & Grants")
-            st.info("Accelerators, funding opportunities, and communities tailored to your profile in Pakistan.")
-            st.write(module_c_results["ecosystem"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📝 Profile", "🌍 SOP & Scholarships", "💼 Career Roadmap", "🇵🇰 Local Ecosystem"])
+    
+    with tab1: 
+        st.subheader(f"🎓 {profile.get('name', 'Student')} - Profile Overview")
+        
+        score = profile.get("profile_strength_score", 0)
+        st.metric(label="Profile Strength Score", value=f"{score} / 100", delta="Competitiveness Matrix" if score > 75 else "Needs Improvement")
+        st.progress(score / 100)
+        
+        st.divider()
+        
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.error("🚨 Gap Analysis")
+            st.write(profile.get("gap_analysis", "No gaps identified."))
+        with col_b:
+            st.success("📈 6-Month Improvement Roadmap")
+            for step in profile.get("improvement_roadmap", []):
+                st.write(f"- {step}")
+        
+        st.divider()
+        with st.expander("View Raw Extracted Data"):
+            st.json(profile)
+
+    with tab2:
+        st.subheader("📝 Statement of Purpose")
+        st.write(module_a_results["sop"])
             
-            st.divider()
-            st.success("💡 Pro Tip: Connecting with your local National Incubation Center (NIC) or university Business Incubation Center is the fastest way to build your network before applying abroad.")
-            
-        st.balloons()
+        st.download_button("📄 Download SOP", create_word_doc(module_a_results["sop"]), "SOP.docx")
+        
+        st.divider()
+        st.subheader("📊 Research Trends (Last 3 Years)")
+        st.info("The hottest domains in your field based on recent ArXiv publications.")
+        st.write(module_a_results.get("scholar_trends", ""))
+        
+        st.divider()
+        st.subheader("🌍 Matched Scholarships (2026)")
+        st.write(module_a_results["scholarships"])
+        
+        st.divider()
+        st.subheader("🎯 Targeted Scholarship Gap Analysis")
+        st.error("What you are specifically missing for the matched programs above.")
+        st.write(module_a_results.get("targeted_gaps", ""))
+        
+        st.divider()
+        st.subheader("🕵️ Live Deadline & Document Audit")
+        st.info("Scraped directly from the official scholarship portals just now.")
+        st.write(module_a_results["verification"])
+        
+        st.divider()
+        st.subheader("👨‍🏫 Faculty Match & Cold Email Draft")
+        st.info("Potential faculty advisors and a personalized cold email template referencing recent research.")
+        st.write(module_a_results["faculty_outreach"])
+        
+        st.divider()
+        st.subheader("🔬 AI-Drafted Research Proposal")
+        st.info("A 500-word, literature-backed research proposal generated from live ArXiv papers.")
+        st.write(module_a_results["proposal"])
+        st.download_button("📄 Download Proposal", create_word_doc(module_a_results["proposal"]), "Research_Proposal.docx")
+
+    with tab3:
+        st.subheader("💼 Digital Career Mapping")
+        st.write(module_b_results["careers"])
+        
+        st.divider()
+        st.subheader("📺 12-Week YouTube Learning Roadmap")
+        st.write(module_b_results["roadmap"])
+        
+        st.divider()
+        st.subheader("💸 Freelance Market Entry")
+        st.info("Ready-to-use Upwork bio, Fiverr gigs, and a 14-day portfolio project.")
+        st.write(module_b_results["freelance"])
+        
+        st.divider()
+        st.subheader("⚖️ Academia vs Industry (The Hard Truth)")
+        st.info("An honest tradeoff analysis of pursuing a PhD vs entering the workforce.")
+        st.write(module_b_results.get("phd_tradeoff", ""))
+
+    with tab4:
+        st.subheader("🇵🇰 Local Tech Ecosystem & Grants")
+        st.info("Accelerators, funding opportunities, and communities tailored to your profile in Pakistan.")
+        st.write(module_c_results["ecosystem"])
+        
+        st.divider()
+        st.success("💡 Pro Tip: Connecting with your local National Incubation Center (NIC) or university Business Incubation Center is the fastest way to build your network before applying abroad.")

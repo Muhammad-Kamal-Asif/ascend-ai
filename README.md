@@ -2,20 +2,18 @@
 
 Ascend AI is a multi-agent, load-balanced AI platform designed to help students map their academic and professional futures. By analyzing a student's profile or CV, Ascend AI autonomously drafts publication-ready Statements of Purpose (SOPs), matches them with fully-funded international scholarships, maps localized career trajectories, and connects them with the local tech ecosystem.
 
-## 🚀 Features
-*   **Multi-Agent Orchestration:** Utilizes specialized AI agents (Profile Architect, SOP Writer, Scholarship Matcher, Ecosystem Advisor) working in sequence.
-*   **Dynamic Load Balancing:** Built-in API key rotation to seamlessly handle hard rate limits during high-traffic demonstrations.
-*   **Real-Time Web Search:** Integrates DuckDuckGo, ArXiv, and YouTube search tools for verified 2026 deadlines, academic papers, and dynamic learning roadmaps.
-*   **Multilingual Support:** One-click academic Urdu translation for generated documentation.
+## 🚀 Key Features
+*   **Multi-Agent Orchestration:** Utilizes specialized AI agents (Profile Architect, SOP Writer, Scholarship Matcher, Ecosystem Advisor) working in a highly optimized sequence.
+*   **Fault-Tolerant Execution:** Custom API key rotation and error-handling wrappers seamlessly bypass rate limits and LLM tool hallucinations during high-traffic demonstrations.
+*   **Real-Time Web Search:** Integrates DuckDuckGo, ArXiv, and BeautifulSoup for verified 2026 deadlines, academic papers, and live data scraping.
+*   **Session History Dashboard:** Built-in state management allows users to instantly recall previous profile generations and toggle between different student roadmaps without spending extra API tokens.
 *   **Pydantic V2 Aligned:** Engineered on the modern LangChain 0.2.x and CrewAI 0.35+ ecosystem for unbreakable tool validation.
 
 ## 🛠️ Architecture & Tech Stack
 *   **Frontend:** Streamlit
 *   **Orchestration:** CrewAI
 *   **LLM Integration:** LangChain (v0.2.x), Groq API
-*   **Models:** 
-    *   `llama-3.3-70b-versatile` (Core logic and strict JSON generation)
-    *   `llama-3.1-8b-instant` (Fast localized translation and ecosystem mapping)
+*   **Primary Model:** `llama-3.1-8b-instant` (Optimized for high-speed multi-agent interaction and dynamic tool calling).
 *   **Document Parsing:** pdfplumber, python-docx
 
 ## 💻 Local Setup & Installation (Judge's Guide)
@@ -56,11 +54,12 @@ streamlit run app.py
 1. Upload your CV (PDF) or click **"Load Demo Profile"** to populate the background data.
 2. Click **"Generate My Path"**.
 3. Navigate through the tabs to view your structured profile, drafted SOP, matched 2026 scholarships, 12-week YouTube learning roadmap, and recommended local ecosystem connections.
+4. Access previous generations via the **Session History** in the sidebar.
 
 ## 👨‍💻 Developed By
 
-*   **Muhammad Kamal**: Co-Founder & Lead Strategist.
-*   **Kinza Irshad**: Co-Founder, Web Developer & Ad Expert.
+*   **Muhammad Kamal**: Lead AI Architect & Product Strategist
+*   **Kinza Irshad**: WordPress & UI/UX Developer
 
 ---
 *Disclaimer: Ascend AI is an AI advisory tool. Users are encouraged to verify all deadlines on official university portals.*

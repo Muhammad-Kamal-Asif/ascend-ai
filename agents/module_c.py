@@ -18,8 +18,8 @@ def safe_kickoff(crew_instance, task_name):
                 return type('obj', (object,), {'raw': "Information gathering incomplete due to model constraints, but the process is continuing..."})
             
             if "rate limit" in error_msg or "429" in error_msg or "too large" in error_msg:
-                print(f"\n[🚨 API LIMIT HIT] Pausing for 25s (Attempt {attempt + 1}/{max_retries})...")
-                time.sleep(25)
+                print(f"\n[🚨 API LIMIT HIT] Pausing for 30s (Attempt {attempt + 1}/{max_retries})...")
+                time.sleep(30)
             else:
                 raise e
     return type('obj', (object,), {'raw': f"{task_name} failed after retries."})

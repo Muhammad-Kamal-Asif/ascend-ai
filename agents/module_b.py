@@ -1,3 +1,5 @@
+import profile
+
 from langchain_community.tools import YouTubeSearchTool
 from crewai import Agent, Task, Crew, Process, LLM
 from crewai.tools import tool
@@ -55,8 +57,8 @@ def run_module_b(profile):
     skill_level = "intermediate" if profile.get('work_experience') else "beginner"
 
     roadmap_task = Task(
-        description=f"Based on the top career identified, create a 12-week learning roadmap. Use the youtube_search_tool with short queries to find real {skill_level} tutorial videos for each week's topic and include the link.",
-        expected_output="A 12-week syllabus with real YouTube links.",
+        description=f"Create a 12-week YouTube learning roadmap for {profile.get('name')} to master {profile.get('target_program', 'their field')}. You MUST format this as a vertical list.",
+        expected_output="A strict Markdown list. Each week MUST be on a new line and start with a bullet point (e.g., '- **Week 1:** [Topic] - [URL]'). Do NOT output a single paragraph.",
         agent=roadmap_agent
     )
 
