@@ -173,16 +173,23 @@ if st.button("🚀 Generate My Path", type="primary", use_container_width=True):
             st.session_state.module_a_data = run_module_a(st.session_state.profile_data, live_rate)
             status_a.update(label="SOP & Scholarships Ready!", state="complete", expanded=False)
 
-        time.sleep(12) 
+        time.sleep(12)
+        
+        # --- NEW: Swap to Key 2 to bypass Groq rate limit ---
+        rotate_api_key()
 
         with st.status("Module B: Mapping Careers...", expanded=True) as status_b:
             st.session_state.module_b_data = run_module_b(st.session_state.profile_data)
             status_b.update(label="Career Roadmap Ready!", state="complete", expanded=False)
 
-        time.sleep(12) 
+        time.sleep(12)
+
+        # --- NEW: Swap back to Key 1 (or keep Key 2) for safety ---
+        rotate_api_key()
 
         with st.status("Module C: Local Tech Ecosystem...", expanded=True) as status_c:
             st.session_state.module_c_data = run_module_c(st.session_state.profile_data)
+            status_c.update(label="Local Ecosystem Ready!", state="complete", expanded=False)
             status_c.update(label="Local Ecosystem Ready!", state="complete", expanded=False)
 
         # --- NEW: SAVE SNAPSHOT TO HISTORY BEFORE RERUN ---
