@@ -16,13 +16,18 @@ from langchain_community.tools import DuckDuckGoSearchRun
 # Load environment variables
 load_dotenv()
 
-# --- DUAL-KEY LOAD BALANCER ---
+# --- QUAD-KEY LOAD BALANCER ---
 # Store original keys safely so we can rotate them dynamically
-GROQ_KEYS = [os.environ.get("GROQ_API_KEY"), os.environ.get("GROQ_API_KEY_2")]
+GROQ_KEYS = [
+    os.environ.get("GROQ_API_KEY"), 
+    os.environ.get("GROQ_API_KEY_2"),
+    os.environ.get("GROQ_API_KEY_3"),
+    os.environ.get("GROQ_API_KEY_4")
+]
 VALID_KEYS = [k for k in GROQ_KEYS if k]
 
 def rotate_api_key():
-    """Dynamically swaps the active API key to prevent Token-Per-Day limits."""
+    """Dynamically swaps the active API key to prevent Token-Per-Minute limits."""
     if VALID_KEYS:
         os.environ["GROQ_API_KEY"] = random.choice(VALID_KEYS)
 
