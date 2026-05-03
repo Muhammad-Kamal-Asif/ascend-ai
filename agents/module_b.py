@@ -12,7 +12,7 @@ def youtube_search_tool(query: str) -> str:
 
 def run_module_b(profile):
     
-    safe_llm = LLM(model="groq/llama-3.3-70b-versatile", temperature=0.0)
+    safe_llm = LLM(model="groq/llama-3.1-8b-instant", temperature=0.0)
 
     career_agent = Agent(
         role="Career Path Mapper",
