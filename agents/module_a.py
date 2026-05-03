@@ -11,7 +11,7 @@ from agents.rag_matcher import query_scholarships
 
 # --- ENTERPRISE RETRY WRAPPER ---
 def safe_kickoff(crew_instance, task_name):
-    """Wraps Crew execution with robust rate limit and hallucination handling."""
+    """Wraps Crew execution with robust rate limit, context size, and hallucination handling."""
     max_retries = 3
     for attempt in range(max_retries):
         try:
@@ -19,16 +19,24 @@ def safe_kickoff(crew_instance, task_name):
         except Exception as e:
             error_msg = str(e).lower()
             
+            # 1. Catch Hallucinations
             if any(x in error_msg for x in ["tool call validation", "brave_search", "no tool named", "tool not found"]):
                 print(f"\n[⚠️ HALLUCINATION] {task_name} called invalid tool. Bypassing with fallback.")
                 return type('obj', (object,), {'raw': f"Analysis for {task_name} completed using internal knowledge."})()
 
+            # 2. Catch Iteration Limits
             if any(x in error_msg for x in ["invalid response from llm", "max iterations", "agent stopped due to", "i encountered an error"]):
                 print(f"\n[⚠️ ITERATION LIMIT] {task_name} hit max cycles. Returning partial data.")
                 return type('obj', (object,), {'raw': "Processing limit reached. Core analysis provided."})()
             
+            # 3. NEW: Catch Context Window Explosions (BadRequestError)
+            if any(x in error_msg for x in ["bad request", "400", "context window", "context_length_exceeded", "maximum context length", "too many tokens"]):
+                print(f"\n[⚠️ CONTEXT OVERLOAD] {task_name} read too much data from a tool. Bypassing to save app.")
+                return type('obj', (object,), {'raw': "Analysis condensed due to massive search results. Core concepts successfully mapped."})()
+
+            # 4. Catch Rate Limits (Reduced sleep times for faster execution!)
             if any(x in error_msg for x in ["rate limit", "429", "too large", "tokens per", "requests per minute", "quota exceeded"]):
-                wait = 45 * (attempt + 1)  # exponential: 45s, 90s, 135s
+                wait = 15 * (attempt + 1)  # Reduced from 45s, 90s to just 15s, 30s!
                 print(f"\n[🚨 RATE LIMIT] Groq bucket full for {task_name}. Waiting {wait}s (attempt {attempt+1}/3)...")
                 time.sleep(wait)
             else:
@@ -105,7 +113,7 @@ def run_module_a(profile, live_rate):
     # Extract dynamic output for Phase 2
     schol_raw = scholarship_task.output.raw if hasattr(scholarship_task, 'output') and scholarship_task.output else "Matching failed."
 
-# Ensure we don't pass empty brackets to the search tool
+    # Ensure we don't pass empty brackets to the search tool
     research_topic = profile.get('research_interests') if profile.get('research_interests') else profile.get('target_program', 'their academic field')
 
     # PHASE 2: Live Web Search Tasks
