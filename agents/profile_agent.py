@@ -4,18 +4,23 @@ from crewai import Agent, Task, Crew, Process
 from utils.key_manager import key_manager
 
 def extract_profile(raw_text):
+    
+    # 1. TEXT TRUNCATION (Fix for 400 BadRequest Context Explosions)
+    # 6000 characters is plenty for a CV, but keeps it well under the token limit
+    safe_text = str(raw_text)[:6000] 
+
     profile_agent = Agent(
         role="Profile Intelligence Architect",
         goal="Extract unstructured student data and perform a rigorous profile strength assessment.",
         backstory="You are an elite university admissions consultant. You not only extract data but evaluate it critically against top-tier global scholarship standards (like Fulbright, Chevening, DAAD). You are brutally honest about gaps and highly strategic about improvements.",
-        llm=key_manager.get_llm(model="groq/llama-3.3-70b-versatile"), # <-- Explicitly using the 70b model with Key Manager
+        llm=key_manager.get_llm(model="groq/llama-3.3-70b-versatile"), 
         verbose=True
     )
 
     extraction_task = Task(
         description=f"""
         Parse the following raw notes or CV into a strict JSON object.
-        Raw input: {raw_text}
+        Raw input: {safe_text}
         
         1. Extract the standard demographic and academic data.
         2. Calculate a 'profile_strength_score' (0-100) based on academic excellence, research output, leadership, and work experience. Be strict. A student with good grades but no research or leadership should score around 50-60.
@@ -50,11 +55,32 @@ def extract_profile(raw_text):
     )
 
     crew = Crew(agents=[profile_agent], tasks=[extraction_task], process=Process.sequential)
-    result = crew.kickoff()
     
+    # 2. SAFETY NET (Prevents Streamlit from crashing if API fails)
     try:
+        result = crew.kickoff()
         clean_json = result.raw.strip().replace("```json", "").replace("```", "")
         return json.loads(clean_json)
     except Exception as e:
-        print(f"JSON Parsing Error: {e}")
-        return None
+        print(f"\n[🚨 CRITICAL] Profile Extraction Error: {e}")
+        # Fallback profile to keep the app running so Modules A, B, and C can still execute
+        return {
+          "name": "Student", 
+          "degree": "Undergraduate", 
+          "university": "University", 
+          "cgpa": "N/A", 
+          "graduation_year": "N/A",
+          "research_interests": ["Technology"], 
+          "work_experience": [], 
+          "extracurriculars": [],
+          "target_country": ["Global"], 
+          "target_program": "Master's Degree", 
+          "target_scholarships": [],
+          "career_goal": "Advance in Tech", 
+          "key_strengths": ["Adaptability"], 
+          "special_skills": ["Digital Literacy"],
+          "is_research_track": False,
+          "profile_strength_score": 50,
+          "gap_analysis": "The system experienced an API overload while analyzing your profile. Gap analysis bypassed.",
+          "improvement_roadmap": ["Try submitting a slightly shorter background description next time."]
+        }
