@@ -23,9 +23,10 @@ def safe_kickoff(crew_instance, task_name):
                 print(f"\n[⚠️ ITERATION LIMIT] {task_name} hit max cycles. Returning partial data.")
                 return type('obj', (object,), {'raw': "Processing limit reached. Core analysis provided."})()
             
-            if any(x in error_msg for x in ["rate limit", "429", "too large", "tokens per", "requests per minute", "quota exceeded"]):
+            # Catch Rate Limits AND Server Overloads (503)
+            if any(x in error_msg for x in ["rate limit", "429", "too large", "tokens per", "requests per minute", "quota exceeded", "503", "unavailable"]):
                 wait = 45 * (attempt + 1)  # exponential: 45s, 90s, 135s
-                print(f"\n[🚨 RATE LIMIT] Groq bucket full for {task_name}. Waiting {wait}s (attempt {attempt+1}/3)...")
+                print(f"\n[🚨 SERVER BUSY] API overloaded for {task_name}. Waiting {wait}s (attempt {attempt+1}/3)...")
                 time.sleep(wait)
             else:
                 raise e

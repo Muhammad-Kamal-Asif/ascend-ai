@@ -29,15 +29,15 @@ def safe_kickoff(crew_instance, task_name):
                 print(f"\n[⚠️ ITERATION LIMIT] {task_name} hit max cycles. Returning partial data.")
                 return type('obj', (object,), {'raw': "Processing limit reached. Core analysis provided."})()
             
-            # 3. NEW: Catch Context Window Explosions (BadRequestError)
+            # 3. Catch Context Window Explosions (BadRequestError)
             if any(x in error_msg for x in ["bad request", "400", "context window", "context_length_exceeded", "maximum context length", "too many tokens"]):
                 print(f"\n[⚠️ CONTEXT OVERLOAD] {task_name} read too much data from a tool. Bypassing to save app.")
                 return type('obj', (object,), {'raw': "Analysis condensed due to massive search results. Core concepts successfully mapped."})()
 
-            # 4. Catch Rate Limits (Reduced sleep times for faster execution!)
-            if any(x in error_msg for x in ["rate limit", "429", "too large", "tokens per", "requests per minute", "quota exceeded"]):
+            # 4. Catch Rate Limits AND Server Overloads (503)
+            if any(x in error_msg for x in ["rate limit", "429", "too large", "tokens per", "requests per minute", "quota exceeded", "503", "unavailable"]):
                 wait = 15 * (attempt + 1)  # Reduced from 45s, 90s to just 15s, 30s!
-                print(f"\n[🚨 RATE LIMIT] Groq bucket full for {task_name}. Waiting {wait}s (attempt {attempt+1}/3)...")
+                print(f"\n[🚨 SERVER BUSY] API overloaded for {task_name}. Waiting {wait}s (attempt {attempt+1}/3)...")
                 time.sleep(wait)
             else:
                 raise e
